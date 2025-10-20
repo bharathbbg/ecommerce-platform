@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  order-service:
+    build:
+      context: ../order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=order_db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DELIVERY_SERVICE_HOST=delivery-service
+      - DELIVERY_SERVICE_PORT=50052
+      - INVENTORY_SERVICE_HOST=inventory-service
+      - INVENTORY_SERVICE_PORT=50053
+    networks:
+      - microservices-net
+
+  delivery-service:
+    build:
+      context: ../delivery-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+      - "50052:50052"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=delivery_db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ORDER_SERVICE_HOST=order-service
+      - ORDER_SERVICE_PORT=50051
+    networks:
+      - microservices-net
+
+  inventory-service:
+    build:
+      context: ../inventory-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+      - "50053:50053"
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=inventory_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ORDER_SERVICE_HOST=order-service
+      - ORDER_SERVICE_PORT=50051
+    networks:
+      - microservices-net
+
+  postgres:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MULTIPLE_DATABASES=order_db,delivery_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sh:/docker-entrypoint-initdb.d/postgres-init.sh
+    networks:
+      - microservices-net
+
+  mongo:
+    image: mongo:4.4
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - microservices-net
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+
+volumes:
+  postgres-data:
+  mongo-data:
