@@ -19,6 +19,7 @@ This repository contains Terraform code to deploy the e-commerce microservices p
 - Appropriate permissions to create resources
 
 ## Getting Started
+Detailed execution steps are available in wiki
 
 1. Set up authentication:
 
